@@ -1,2 +1,7 @@
-# Auto detect text files and perform LF normalization
+# Normalización básica de texto
 * text=auto
+
+# Reglas específicas del proyecto Spring
+/gradlew text eol=lf
+*.bat    text eol=crlf
+*.jar    binary
