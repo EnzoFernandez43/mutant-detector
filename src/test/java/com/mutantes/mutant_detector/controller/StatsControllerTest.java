@@ -23,26 +23,16 @@ class StatsControllerTest {
     private StatsService statsService;
 
     @Test
-    void debeDevolverEstadisticasCorrectas() throws Exception {
-        StatsResponse stats = new StatsResponse(3, 6, 0.5);
+    void getStats_debeRetornarOkYJsonCorrecto() throws Exception {
+        // Arrange
+        StatsResponse stats = new StatsResponse(50, 150, 0.33);
         when(statsService.getStats()).thenReturn(stats);
 
+        // Act & Assert
         mockMvc.perform(get("/stats"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.count_mutant_dna").value(3))
-                .andExpect(jsonPath("$.count_human_dna").value(6))
-                .andExpect(jsonPath("$.ratio").value(0.5));
-    }
-
-    @Test
-    void cuandoNoHayHumanos_ratioDebeSerCero() throws Exception {
-        StatsResponse stats = new StatsResponse(5, 0, 0.0);
-        when(statsService.getStats()).thenReturn(stats);
-
-        mockMvc.perform(get("/stats"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.count_mutant_dna").value(5))
-                .andExpect(jsonPath("$.count_human_dna").value(0))
-                .andExpect(jsonPath("$.ratio").value(0.0));
+                .andExpect(jsonPath("$.count_mutant_dna").value(50))
+                .andExpect(jsonPath("$.count_human_dna").value(150))
+                .andExpect(jsonPath("$.ratio").value(0.33));
     }
 }

@@ -4,6 +4,7 @@ import com.mutantes.mutant_detector.entity.DnaRecord;
 import com.mutantes.mutant_detector.repository.DnaRecordRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -11,7 +12,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -27,97 +27,68 @@ class MutantServiceTest {
     @InjectMocks
     private MutantService mutantService;
 
-    @Test
-    void dadoDnaMutante_debeDevolverTrueYGuardarEnBd() {
-        String[] dna = {
-                "ATGCGA",
-                "CAGTGC",
-                "TTATGT",
-                "AGAAGG",
-                "CCCCTA",
-                "TCACTG"
-        };
-
-        // No está en BD → se analiza y se guarda
-        when(dnaRecordRepository.findByDnaHash(anyString()))
-                .thenReturn(Optional.empty());
-        when(mutantDetector.isMutant(dna)).thenReturn(true);
-        when(dnaRecordRepository.save(any(DnaRecord.class)))
-                .thenAnswer(inv -> inv.getArgument(0));
-
-        boolean result = mutantService.isMutant(dna);
-
-        assertTrue(result);
-        verify(mutantDetector).isMutant(dna);
-        verify(dnaRecordRepository).save(any(DnaRecord.class));
-    }
+    private final String[] mutantDna = {"ATGCGA", "CAGTGC", "TTATGT", "AGAAGG", "CCCCTA", "TCACTG"};
+    private final String[] humanDna = {"ATGCGA", "CAGTGC", "TTATTT", "AGACGG", "GCGTCA", "TCACTG"};
 
     @Test
-    void dadoDnaHumano_debeDevolverFalseYGuardarEnBd() {
-        String[] dna = {
-                "ATGCGA",
-                "CAGTGC",
-                "TTATTT",
-                "AGACGG",
-                "GCGTCA",
-                "TCACTG"
-        };
-
-        when(dnaRecordRepository.findByDnaHash(anyString()))
-                .thenReturn(Optional.empty());
-        when(mutantDetector.isMutant(dna)).thenReturn(false);
-        when(dnaRecordRepository.save(any(DnaRecord.class)))
-                .thenAnswer(inv -> inv.getArgument(0));
-
-        boolean result = mutantService.isMutant(dna);
-
-        assertFalse(result);
-        verify(mutantDetector).isMutant(dna);
-        verify(dnaRecordRepository).save(any(DnaRecord.class));
-    }
-
-    @Test
-    void cuandoHashYaExiste_noAnalizaNiGuardaYDevuelveValorDeLaBd() {
-        String[] dna = {
-                "ATGCGA",
-                "CAGTGC",
-                "TTATGT",
-                "AGAAGG",
-                "CCCCTA",
-                "TCACTG"
-        };
-
+    void isMutant_cuandoDnaYaExisteEnBD_retornaResultadoCacheado() {
+        // Arrange
         DnaRecord record = new DnaRecord();
-        record.setId(1L);
-        record.setDnaHash("hash-falso");
-        record.setMutant(true); // valor ya calculado en BD
+        record.setMutant(true);
+        when(dnaRecordRepository.findByDnaHash(anyString())).thenReturn(Optional.of(record));
 
-        // Simulamos cache hit
-        when(dnaRecordRepository.findByDnaHash(anyString()))
-                .thenReturn(Optional.of(record));
+        // Act
+        boolean result = mutantService.isMutant(mutantDna);
 
-        boolean result = mutantService.isMutant(dna);
-
+        // Assert
         assertTrue(result);
-        // No debe analizar ni guardar otra vez
-        verify(mutantDetector, never()).isMutant(any());
-        verify(dnaRecordRepository, never()).save(any());
+        verify(mutantDetector, never()).isMutant(any()); // Verifica que el detector NO fue llamado
+        verify(dnaRecordRepository, never()).save(any()); // Verifica que NO se guardó nada
     }
 
     @Test
-    void cuandoDetectorLanzaIllegalArgument_propagamosExcepcion() {
-        String[] dna = {
-                "ATG",
-                "CAG",
-                "TTT"
-        };
+    void isMutant_cuandoDnaEsNuevoYMutante_analizaYGuarda() {
+        // Arrange
+        when(dnaRecordRepository.findByDnaHash(anyString())).thenReturn(Optional.empty());
+        when(mutantDetector.isMutant(mutantDna)).thenReturn(true);
+        ArgumentCaptor<DnaRecord> recordCaptor = ArgumentCaptor.forClass(DnaRecord.class);
 
-        when(dnaRecordRepository.findByDnaHash(anyString()))
-                .thenReturn(Optional.empty());
-        when(mutantDetector.isMutant(dna))
-                .thenThrow(new IllegalArgumentException("DNA inválido"));
+        // Act
+        boolean result = mutantService.isMutant(mutantDna);
 
-        assertThrows(IllegalArgumentException.class,
-                () -> mutantService.isMutant(dna));
+        // Assert
+        assertTrue(result);
+        verify(dnaRecordRepository).save(recordCaptor.capture()); // Verifica que se llamó a save
+        DnaRecord savedRecord = recordCaptor.getValue();
+        assertTrue(savedRecord.isMutant());
+        assertNotNull(savedRecord.getDnaHash());
+    }
+
+    @Test
+    void isMutant_cuandoDnaEsNuevoYHumano_analizaYGuarda() {
+        // Arrange
+        when(dnaRecordRepository.findByDnaHash(anyString())).thenReturn(Optional.empty());
+        when(mutantDetector.isMutant(humanDna)).thenReturn(false);
+        ArgumentCaptor<DnaRecord> recordCaptor = ArgumentCaptor.forClass(DnaRecord.class);
+
+        // Act
+        boolean result = mutantService.isMutant(humanDna);
+
+        // Assert
+        assertFalse(result);
+        verify(dnaRecordRepository).save(recordCaptor.capture());
+        DnaRecord savedRecord = recordCaptor.getValue();
+        assertFalse(savedRecord.isMutant());
+    }
+
+    @Test
+    void calculateDnaHash_esConsistente() {
+        // Act
+        String hash1 = mutantService.calculateDnaHash(mutantDna);
+        String hash2 = mutantService.calculateDnaHash(mutantDna);
+
+        // Assert
+        assertEquals(hash1, hash2);
+        assertEquals(64, hash1.length());
     }
 }

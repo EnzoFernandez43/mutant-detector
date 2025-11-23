@@ -2,29 +2,24 @@ package com.mutantes.mutant_detector.service;
 
 import com.mutantes.mutant_detector.dto.StatsResponse;
 import com.mutantes.mutant_detector.repository.DnaRecordRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class StatsService {
 
-    private final DnaRecordRepository repository;
-
-    public StatsService(DnaRecordRepository repository) {
-        this.repository = repository;
-    }
+    private final DnaRecordRepository dnaRecordRepository;
 
     public StatsResponse getStats() {
-        long mutants = repository.countByIsMutant(true);
-        long humans  = repository.countByIsMutant(false);
+        long mutantCount = dnaRecordRepository.countByIsMutant(true);
+        long humanCount = dnaRecordRepository.countByIsMutant(false);
 
-        double ratio;
-        if (humans == 0) {
-            // Definición estándar del desafío: si no hay humanos, ratio = 0.0
-            ratio = 0.0;
-        } else {
-            ratio = (double) mutants / humans;
+        double ratio = 0.0;
+        if (humanCount > 0) {
+            ratio = (double) mutantCount / humanCount;
         }
 
-        return new StatsResponse(mutants, humans, ratio);
+        return new StatsResponse(mutantCount, humanCount, ratio);
     }
 }

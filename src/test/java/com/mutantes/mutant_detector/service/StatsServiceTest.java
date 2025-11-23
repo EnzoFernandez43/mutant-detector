@@ -8,39 +8,45 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class StatsServiceTest {
 
     @Mock
-    private DnaRecordRepository repository;
+    private DnaRecordRepository dnaRecordRepository;
 
     @InjectMocks
     private StatsService statsService;
 
     @Test
-    void calcularStatsCorrectamente() {
-        when(repository.countByIsMutant(true)).thenReturn(4L);
-        when(repository.countByIsMutant(false)).thenReturn(8L);
+    void getStats_calculaCorrectamente() {
+        // Arrange
+        when(dnaRecordRepository.countByIsMutant(true)).thenReturn(40L);
+        when(dnaRecordRepository.countByIsMutant(false)).thenReturn(100L);
 
-        StatsResponse result = statsService.getStats();
+        // Act
+        StatsResponse response = statsService.getStats();
 
-        assertEquals(4, result.getCount_mutant_dna());
-        assertEquals(8, result.getCount_human_dna());
-        assertEquals(0.5, result.getRatio());
+        // Assert
+        assertEquals(40, response.getCountMutantDna());
+        assertEquals(100, response.getCountHumanDna());
+        assertEquals(0.4, response.getRatio(), 0.001);
     }
 
     @Test
-    void cuandoNoHayHumanos_ratioEsCero() {
-        when(repository.countByIsMutant(true)).thenReturn(5L);
-        when(repository.countByIsMutant(false)).thenReturn(0L);
+    void getStats_cuandoHumanosEsCero_ratioEsCero() {
+        // Arrange
+        when(dnaRecordRepository.countByIsMutant(true)).thenReturn(10L);
+        when(dnaRecordRepository.countByIsMutant(false)).thenReturn(0L);
 
-        StatsResponse result = statsService.getStats();
+        // Act
+        StatsResponse response = statsService.getStats();
 
-        assertEquals(5, result.getCount_mutant_dna());
-        assertEquals(0, result.getCount_human_dna());
-        assertEquals(0.0, result.getRatio());
+        // Assert
+        assertEquals(10, response.getCountMutantDna());
+        assertEquals(0, response.getCountHumanDna());
+        assertEquals(0.0, response.getRatio(), 0.001);
     }
 }

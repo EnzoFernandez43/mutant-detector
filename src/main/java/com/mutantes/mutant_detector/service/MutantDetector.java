@@ -1,110 +1,95 @@
 package com.mutantes.mutant_detector.service;
 
 import org.springframework.stereotype.Service;
+import java.util.Set;
 
 @Service
 public class MutantDetector {
 
     private static final int SEQUENCE_LENGTH = 4;
+    private static final int MIN_SEQUENCES_FOR_MUTANT = 2;
+    private static final Set<Character> VALID_BASES = Set.of('A', 'T', 'C', 'G');
 
     public boolean isMutant(String[] dna) {
-        char[][] matrix = validateAndBuildMatrix(dna);
-        int n = matrix.length;
-        int sequences = 0;
+        validateDna(dna);
 
-        // Horizontal →
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j <= n - SEQUENCE_LENGTH; j++) {
-                char c = matrix[i][j];
-                if (c == matrix[i][j + 1] &&
-                        c == matrix[i][j + 2] &&
-                        c == matrix[i][j + 3]) {
+        final int n = dna.length;
+        final char[][] matrix = buildMatrix(dna, n);
+        int sequenceCount = 0;
 
-                    sequences++;
-                    if (sequences > 1) return true;
+        for (int row = 0; row < n; row++) {
+            for (int col = 0; col < n; col++) {
+                if (col <= n - SEQUENCE_LENGTH) {
+                    if (isHorizontal(matrix, row, col)) {
+                        sequenceCount++;
+                    }
+                }
+                if (row <= n - SEQUENCE_LENGTH) {
+                    if (isVertical(matrix, row, col)) {
+                        sequenceCount++;
+                    }
+                }
+                if (row <= n - SEQUENCE_LENGTH && col <= n - SEQUENCE_LENGTH) {
+                    if (isDiagonal(matrix, row, col)) {
+                        sequenceCount++;
+                    }
+                }
+                if (row >= SEQUENCE_LENGTH - 1 && col <= n - SEQUENCE_LENGTH) {
+                    if (isAntiDiagonal(matrix, row, col)) {
+                        sequenceCount++;
+                    }
+                }
+
+                if (sequenceCount >= MIN_SEQUENCES_FOR_MUTANT) {
+                    return true;
                 }
             }
         }
-
-        // Vertical ↓
-        for (int j = 0; j < n; j++) {
-            for (int i = 0; i <= n - SEQUENCE_LENGTH; i++) {
-                char c = matrix[i][j];
-                if (c == matrix[i + 1][j] &&
-                        c == matrix[i + 2][j] &&
-                        c == matrix[i + 3][j]) {
-
-                    sequences++;
-                    if (sequences > 1) return true;
-                }
-            }
-        }
-
-        // Diagonal ↘
-        for (int i = 0; i <= n - SEQUENCE_LENGTH; i++) {
-            for (int j = 0; j <= n - SEQUENCE_LENGTH; j++) {
-                char c = matrix[i][j];
-                if (c == matrix[i + 1][j + 1] &&
-                        c == matrix[i + 2][j + 2] &&
-                        c == matrix[i + 3][j + 3]) {
-
-                    sequences++;
-                    if (sequences > 1) return true;
-                }
-            }
-        }
-
-        // Diagonal ↗
-        for (int i = SEQUENCE_LENGTH - 1; i < n; i++) {
-            for (int j = 0; j <= n - SEQUENCE_LENGTH; j++) {
-                char c = matrix[i][j];
-                if (c == matrix[i - 1][j + 1] &&
-                        c == matrix[i - 2][j + 2] &&
-                        c == matrix[i - 3][j + 3]) {
-
-                    sequences++;
-                    if (sequences > 1) return true;
-                }
-            }
-        }
-
-        return sequences > 1;
+        return false;
     }
 
-    // Validación básica + construcción de matriz char[][]
-    private char[][] validateAndBuildMatrix(String[] dna) {
-        if (dna == null || dna.length == 0) {
-            throw new IllegalArgumentException("DNA no puede ser nulo ni vacío.");
-        }
+    private boolean isHorizontal(char[][] matrix, int row, int col) {
+        char base = matrix[row][col];
+        return matrix[row][col + 1] == base && matrix[row][col + 2] == base && matrix[row][col + 3] == base;
+    }
 
+    private boolean isVertical(char[][] matrix, int row, int col) {
+        char base = matrix[row][col];
+        return matrix[row + 1][col] == base && matrix[row + 2][col] == base && matrix[row + 3][col] == base;
+    }
+
+    private boolean isDiagonal(char[][] matrix, int row, int col) {
+        char base = matrix[row][col];
+        return matrix[row + 1][col + 1] == base && matrix[row + 2][col + 2] == base && matrix[row + 3][col + 3] == base;
+    }
+
+    private boolean isAntiDiagonal(char[][] matrix, int row, int col) {
+        char base = matrix[row][col];
+        return matrix[row - 1][col + 1] == base && matrix[row - 2][col + 2] == base && matrix[row - 3][col + 3] == base;
+    }
+
+    private void validateDna(String[] dna) {
+        if (dna == null || dna.length < SEQUENCE_LENGTH) {
+            throw new IllegalArgumentException("El ADN debe ser una matriz de al menos 4x4.");
+        }
         int n = dna.length;
-        if (n < 4) {
-            throw new IllegalArgumentException("La matriz ADN debe ser al menos de 4x4.");
-        }
-
-        char[][] matrix = new char[n][n];
-
-        for (int i = 0; i < n; i++) {
-            String row = dna[i];
-            if (row == null) {
-                throw new IllegalArgumentException("Fila ADN nula en índice " + i);
+        for (String row : dna) {
+            if (row == null || row.length() != n) {
+                throw new IllegalArgumentException("La matriz de ADN debe ser cuadrada (NxN).");
             }
-
-            if (row.length() != n) {
-                throw new IllegalArgumentException("La matriz debe ser NxN. Error en fila " + i);
-            }
-
-            for (int j = 0; j < n; j++) {
-                char c = Character.toUpperCase(row.charAt(j));
-                if (c != 'A' && c != 'T' && c != 'C' && c != 'G') {
-                    throw new IllegalArgumentException(
-                            "Carácter inválido '" + c + "' en (" + i + "," + j + "). Solo A,T,C,G."
-                    );
+            for (char c : row.toCharArray()) {
+                if (!VALID_BASES.contains(Character.toUpperCase(c))) {
+                    throw new IllegalArgumentException("El ADN contiene caracteres inválidos.");
                 }
-                matrix[i][j] = c;
             }
         }
+    }
 
+    private char[][] buildMatrix(String[] dna, int n) {
+        char[][] matrix = new char[n][n];
+        for (int i = 0; i < n; i++) {
+            matrix[i] = dna[i].toUpperCase().toCharArray();
+        }
         return matrix;
     }
 }
