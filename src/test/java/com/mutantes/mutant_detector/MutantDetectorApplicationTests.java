@@ -8,6 +8,12 @@ class MutantDetectorApplicationTests {
 
 	@Test
 	void contextLoads() {
+		// Solo verifica que el contexto de Spring levante
 	}
 
+	@Test
+	void mainEjecutaSinErrores() {
+		// Ejecuta el método main para cubrir esa rama
+		MutantDetectorApplication.main(new String[]{});
+	}
 }
