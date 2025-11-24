@@ -38,9 +38,9 @@ Para asegurar eficiencia, cada ADN se guarda usando un **hash SHA-256** evitando
 
 | Recurso       | URL                                                                                                                                    |
 | ------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| 🟢 API Base   | [https://mutant-detector-1-6k5q.onrender.com/](https://mutant-detector-1-6k5q.onrender.com/)                                           |
-| 📄 Swagger UI | [https://mutant-detector-1-6k5q.onrender.com/swagger-ui/index.html](https://mutant-detector-1-6k5q.onrender.com/swagger-ui/index.html) |
-| 📊 Stats      | [https://mutant-detector-1-6k5q.onrender.com/stats](https://mutant-detector-1-6k5q.onrender.com/stats)                                 |
+| 🟢 API Base   | [https://mutant-detector-hiin.onrender.com/](https://mutant-detector-hiin.onrender.com/)                                           |
+| 📄 Swagger UI | [https://mutant-detector-hiin.onrender.com/swagger-ui/index.html](https://mutant-detector-hiin.onrender.com/swagger-ui/index.html) |
+| 📊 Stats      | [https://mutant-detector-hiin.onrender.com/stats](https://mutant-detector-hiin.onrender.com/stats)                                 |
 
 ---
 
@@ -65,8 +65,8 @@ Para asegurar eficiencia, cada ADN se guarda usando un **hash SHA-256** evitando
 src/
 ├─ controller/       → Endpoints REST (/mutant, /stats)
 ├─ service/          → Lógica de negocio y detección
-├─ repository/       → Acceso a datos JPA
-├─ entity/           → Entidades persistentes
+├─ repository/     → Acceso a datos JPA
+├─ entity/         → Entidades persistentes
 ├─ dto/              → Modelos de entrada / salida
 ├─ exception/        → Manejo global de errores
 ├─ validation/       → Validaciones de ADN
