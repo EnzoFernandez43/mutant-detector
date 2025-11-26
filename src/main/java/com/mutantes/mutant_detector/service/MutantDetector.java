@@ -19,32 +19,34 @@ public class MutantDetector {
 
         for (int row = 0; row < n; row++) {
             for (int col = 0; col < n; col++) {
+                // Se busca en todas las direcciones desde la celda actual
                 if (col <= n - SEQUENCE_LENGTH) {
                     if (isHorizontal(matrix, row, col)) {
                         sequenceCount++;
+                        if (sequenceCount >= MIN_SEQUENCES_FOR_MUTANT) return true;
                     }
                 }
                 if (row <= n - SEQUENCE_LENGTH) {
                     if (isVertical(matrix, row, col)) {
                         sequenceCount++;
+                        if (sequenceCount >= MIN_SEQUENCES_FOR_MUTANT) return true;
                     }
                 }
                 if (row <= n - SEQUENCE_LENGTH && col <= n - SEQUENCE_LENGTH) {
                     if (isDiagonal(matrix, row, col)) {
                         sequenceCount++;
+                        if (sequenceCount >= MIN_SEQUENCES_FOR_MUTANT) return true;
                     }
                 }
                 if (row >= SEQUENCE_LENGTH - 1 && col <= n - SEQUENCE_LENGTH) {
                     if (isAntiDiagonal(matrix, row, col)) {
                         sequenceCount++;
+                        if (sequenceCount >= MIN_SEQUENCES_FOR_MUTANT) return true;
                     }
-                }
-
-                if (sequenceCount >= MIN_SEQUENCES_FOR_MUTANT) {
-                    return true;
                 }
             }
         }
+        // Si al final del recorrido no se alcanzaron las secuencias, es humano
         return false;
     }
 
